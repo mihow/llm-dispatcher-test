@@ -1,0 +1,74 @@
+[project]
+name = "radio-assistant"
+version = "0.1.0"
+description = "Ham Radio Voice Assistant - Phase 1: Marco Polo Test"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "sounddevice>=0.4.6",
+    "numpy>=1.24.0",
+    "librosa>=0.10.0",
+    "scipy>=1.11.0",
+    "faster-whisper>=0.10.0",
+    "silero-vad>=4.0.0",
+    "torch>=2.0.0",
+    "pydantic>=2.5.0",
+    "typer>=0.9.0",
+    "pyyaml>=6.0",
+    "loguru>=0.7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-benchmark>=4.0.0",
+    "pytest-html>=4.0.0",
+    "pytest-mock>=3.12.0",
+    "black>=23.0.0",
+    "mypy>=1.7.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+radio-assistant = "radio_assistant.main:app"
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --strict-markers"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+[tool.coverage.run]
+source = ["radio_assistant"]
+omit = ["*/tests/*", "*/test_*.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_backend"

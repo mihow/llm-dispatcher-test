@@ -1,0 +1,83 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [main, checkpoint/*]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff mypy black
+
+      - name: Run ruff
+        run: ruff check radio_assistant/ tests/
+
+      - name: Run mypy
+        run: mypy radio_assistant/
+        continue-on-error: true  # Don't fail on type errors during development
+
+      - name: Check formatting with black
+        run: black --check radio_assistant/ tests/
+
+  test-audio-capture:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libportaudio2 libsndfile1
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest pytest-cov pytest-mock soundfile
+
+      - name: Run unit tests
+        run: pytest tests/unit/test_audio_interface.py -v --cov=radio_assistant.audio_interface --cov-report=term --cov-report=xml
+
+      - name: Run integration tests
+        run: pytest tests/integration/test_audio_capture.py -v
+
+      - name: Generate test capture (mock)
+        run: python scripts/test_audio_capture.py --duration 1 --output test_capture.wav || echo "Skipping actual audio capture in CI"
+        continue-on-error: true
+
+      - name: Upload test captures
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-audio-captures-py${{ matrix.python-version }}
+          path: test_capture.wav
+        if: always()
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-py${{ matrix.python-version }}
+        if: matrix.python-version == '3.11'
