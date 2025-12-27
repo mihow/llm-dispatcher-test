@@ -25,6 +25,28 @@
 
 4. **Ignore line length and type errors until the very end** - use command line tools to fix those (black, flake8, ruff)
 
+### Python Type Annotations
+
+Use modern type annotation style (Python 3.10+):
+
+```python
+# ✅ CORRECT - use built-in types and | None
+def process(items: list[str], config: dict[str, int] | None = None) -> tuple[str, int]:
+    result: list[int] = []
+    ...
+
+# ❌ WRONG - old style typing imports
+from typing import Dict, List, Optional, Tuple
+def process(items: List[str], config: Optional[Dict[str, int]] = None) -> Tuple[str, int]:
+    ...
+```
+
+**Rules:**
+- Use `list`, `dict`, `tuple`, `set` directly (not `List`, `Dict`, `Tuple`, `Set` from typing)
+- Use `X | None` instead of `Optional[X]`
+- Use `X | Y` instead of `Union[X, Y]`
+- If you need typing module imports (e.g., `Sequence`, `Mapping`, `Callable`), use namespace: `typing.Sequence` not `from typing import Sequence`
+
 ### Think Holistically
 
 Before diving into code:
