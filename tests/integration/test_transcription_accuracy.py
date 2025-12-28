@@ -21,9 +21,9 @@ def normalize_for_comparison(text: str) -> str:
     # Convert to lowercase
     text = text.lower()
     # Remove punctuation
-    text = re.sub(r'[^\w\s]', ' ', text)
+    text = re.sub(r"[^\w\s]", " ", text)
     # Normalize whitespace
-    text = ' '.join(text.split())
+    text = " ".join(text.split())
     return text
 
 
@@ -116,9 +116,9 @@ class TestTranscriptionAccuracy:
         detection = detector.detect(result.text)
 
         assert detection.detected, f"Failed to detect WSJJ659 in: '{result.text}'"
-        assert detection.confidence > 0.8, (
-            f"Detection confidence too low: {detection.confidence:.2%}"
-        )
+        assert (
+            detection.confidence > 0.8
+        ), f"Detection confidence too low: {detection.confidence:.2%}"
 
         # Keep structure checks
         assert result.duration_ms > 0
@@ -196,9 +196,9 @@ class TestTranscriptionAccuracy:
         detection = detector.detect(result.text)
 
         assert detection.detected, f"Failed to detect K6ABC in: '{result.text}'"
-        assert detection.confidence > 0.8, (
-            f"Detection confidence too low: {detection.confidence:.2%}"
-        )
+        assert (
+            detection.confidence > 0.8
+        ), f"Detection confidence too low: {detection.confidence:.2%}"
 
         # Log for visibility
         print(

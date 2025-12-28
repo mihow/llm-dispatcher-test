@@ -22,9 +22,9 @@ def normalize_for_comparison(text: str) -> str:
     # Convert to lowercase
     text = text.lower()
     # Remove punctuation
-    text = re.sub(r'[^\w\s]', ' ', text)
+    text = re.sub(r"[^\w\s]", " ", text)
     # Normalize whitespace
-    text = ' '.join(text.split())
+    text = " ".join(text.split())
     return text
 
 
@@ -68,15 +68,17 @@ def run_validation() -> bool:
 
         detection = detector.detect(result.text)
 
-        results.append({
-            "file": audio_file.name,
-            "ground_truth": ground_truth,
-            "transcription": result.text,
-            "wer": wer_score,
-            "cer": cer_score,
-            "callsign_detected": detection.detected,
-            "confidence": detection.confidence if detection.detected else 0.0,
-        })
+        results.append(
+            {
+                "file": audio_file.name,
+                "ground_truth": ground_truth,
+                "transcription": result.text,
+                "wer": wer_score,
+                "cer": cer_score,
+                "callsign_detected": detection.detected,
+                "confidence": detection.confidence if detection.detected else 0.0,
+            }
+        )
 
         status = "✓" if wer_score < 0.20 else "✗"
         print(f"\n{status} {audio_file.name}")
@@ -110,5 +112,6 @@ def run_validation() -> bool:
 
 if __name__ == "__main__":
     import sys
+
     success = run_validation()
     sys.exit(0 if success else 1)
