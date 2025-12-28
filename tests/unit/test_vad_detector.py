@@ -90,8 +90,12 @@ class TestVADDetector:
         """Test is_speech detects speech above threshold."""
         mock_model = Mock()
         mock_model.return_value = torch.tensor(0.8)  # High probability
-        # mock_utils removed
         mock_silero.load_silero_vad.return_value = mock_model
+
+        # Mock get_speech_timestamps to return speech segments
+        mock_silero.get_speech_timestamps.return_value = [
+            {"start": 0, "end": 8000}  # One speech segment (in samples)
+        ]
 
         vad: VADDetector = VADDetector(threshold=0.5)
 
@@ -99,15 +103,17 @@ class TestVADDetector:
         result: bool = vad.is_speech(audio)
 
         assert result is True
-        mock_model.assert_called_once()
+        mock_silero.get_speech_timestamps.assert_called_once()
 
     @patch("radio_assistant.vad_detector.silero_vad")
     def test_is_speech_no_speech_detected(self, mock_silero: Mock) -> None:
         """Test is_speech returns False below threshold."""
         mock_model = Mock()
         mock_model.return_value = torch.tensor(0.2)  # Low probability
-        # mock_utils removed
         mock_silero.load_silero_vad.return_value = mock_model
+
+        # Mock get_speech_timestamps to return no speech segments
+        mock_silero.get_speech_timestamps.return_value = []
 
         vad: VADDetector = VADDetector(threshold=0.5)
 
