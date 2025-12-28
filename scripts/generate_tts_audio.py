@@ -215,9 +215,7 @@ def main() -> None:
     )
 
     # Multiple transmissions
-    generate_multiple_transmissions(
-        vad_dir / "multiple_transmissions.wav", sample_rate=sample_rate
-    )
+    generate_multiple_transmissions(vad_dir / "multiple_transmissions.wav", sample_rate=sample_rate)
 
     # Silence (keep existing - just zeros)
     silence = np.zeros(int(2.0 * sample_rate), dtype=np.float32)
