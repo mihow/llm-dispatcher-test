@@ -1,383 +1,188 @@
-# Next Session: Add Real Validation to Tests
+# Next Session: Research Voice Assistant Architectures
 
 **Created**: 2025-12-27
-**Branch**: Create new `feature/add-transcription-validation`
-**Priority**: HIGH - Make tests actually validate correctness
-**Estimated Time**: 2-3 hours
+**Branch**: `planning/phase2-validation-and-service`
+**Priority**: MEDIUM - Research before implementation
+**Context**: 14K tokens used
 
 ---
 
 ## Current State
 
-**What we have:**
+**What we completed:**
 - ✅ Phase 1 complete - all 225 tests passing (100%)
-- ✅ TTS-generated audio with ground truth text files
-- ✅ Batch processing works end-to-end
-- ✅ Planning documents created for Phase 2
+- ✅ WER/CER validation added to transcription tests
+- ✅ Baseline metrics documented: 2.08% avg WER, 0.57% avg CER
+- ✅ Validation report script created
+- ✅ All 16 integration tests passing with real accuracy validation
+- ✅ PR #3 updated with validation changes
 
-**The problem:**
-- ❌ Tests validate "did it run?" not "did it work correctly?"
-- ❌ Ground truth files exist but are ignored
-- ❌ No measurement of transcription accuracy
-
-**Example of current useless test:**
-```python
-# tests/integration/test_transcription_accuracy.py:44-52
-def test_transcribe_hello_world(self, engine, test_audio_dir):
-    audio, sr, ground_truth = self.load_audio_and_transcript(test_audio_dir, "hello_world")
-    result = engine.transcribe(audio, sample_rate=sr)
-
-    # Note: Since we're using tone placeholders, we can't test exact match
-    # This test validates the engine works end-to-end
-    assert isinstance(result.text, str)  # USELESS - just checks it's a string
-    assert result.duration_ms > 0
-    assert isinstance(result.segments, list)
-```
-
-**We load `ground_truth` but never use it!**
+**Current metrics:**
+- Average WER: 2.08% (excellent)
+- Average CER: 0.57% (excellent)
+- Callsign detection: 95% confidence (100% accuracy)
+- Only issue: noisy audio shows 12.50% WER (669 vs 659 transcription error)
 
 ---
 
-## Goal for This Session
+## Next Steps
 
-**Add real validation using Word Error Rate (WER) and Character Error Rate (CER)**
+### Option 1: Fix Noisy Audio Test (Quick Fix - 30 min)
 
-After this session:
-- ✅ Tests will compare transcriptions against ground truth
-- ✅ We'll know exact accuracy of our system
-- ✅ Tests will fail if transcription quality degrades
-- ✅ We'll have baseline metrics for future improvements
+The `wsjj659_noisy.wav` file shows 12.50% WER because Whisper transcribes "669" instead of "659".
 
-**Then:** Research voice assistant architectures (next session)
+**Investigate and fix:**
+1. Check the actual audio file - is it too noisy?
+2. Try different Whisper models (small, medium) for better accuracy
+3. Consider adjusting WER threshold for noisy audio (currently 30%)
+4. Update ground truth if "669" is actually what's in the audio
 
----
-
-## Step-by-Step Implementation
-
-### Step 1: Install jiwer (5 minutes)
-
-**Add to pyproject.toml:**
-```toml
-[project.dependencies]
-# ... existing dependencies ...
-"jiwer>=3.0.0",
-```
-
-**Install:**
+**Quick check:**
 ```bash
-pip install jiwer
-```
+# Listen to the audio
+ffplay tests/audio/transcription/wsjj659_noisy.wav
 
-**Verify:**
-```bash
-python -c "from jiwer import wer, cer; print('jiwer installed OK')"
-```
-
----
-
-### Step 2: Update Transcription Integration Tests (1-2 hours)
-
-**File to edit:** `tests/integration/test_transcription_accuracy.py`
-
-**Add import at top:**
-```python
-from jiwer import wer, cer
-```
-
-**Update each test function to validate against ground truth.**
-
-**Example transformation:**
-
-**BEFORE:**
-```python
-def test_transcribe_hello_world(
-    self, engine: TranscriptionEngine, test_audio_dir: Path
-) -> None:
-    """Test transcribing simple hello world audio."""
-    audio, sr, ground_truth = self.load_audio_and_transcript(test_audio_dir, "hello_world")
-    result = engine.transcribe(audio, sample_rate=sr)
-
-    # Note: Since we're using tone placeholders, we can't test exact match
-    assert isinstance(result.text, str)
-    assert result.duration_ms > 0
-```
-
-**AFTER:**
-```python
-def test_transcribe_hello_world(
-    self, engine: TranscriptionEngine, test_audio_dir: Path
-) -> None:
-    """Test transcribing simple hello world audio."""
-    audio, sr, ground_truth = self.load_audio_and_transcript(test_audio_dir, "hello_world")
-    result = engine.transcribe(audio, sample_rate=sr)
-
-    # Normalize for comparison
-    predicted = result.text.strip().lower()
-    expected = ground_truth.strip().lower()
-
-    # Calculate accuracy metrics
-    word_error_rate = wer(expected, predicted)
-    char_error_rate = cer(expected, predicted)
-
-    # Assert accuracy threshold (TTS audio should be very accurate)
-    assert word_error_rate < 0.20, (
-        f"WER too high: {word_error_rate:.2%}\n"
-        f"Expected: '{expected}'\n"
-        f"Got:      '{predicted}'"
-    )
-
-    # Keep structure checks
-    assert result.duration_ms > 0
-    assert isinstance(result.segments, list)
-
-    # Log for visibility
-    print(f"✓ WER={word_error_rate:.2%}, CER={char_error_rate:.2%}")
-```
-
-**Apply to all test functions:**
-- `test_transcribe_hello_world` - WER < 20%
-- `test_transcribe_callsign_clear` - WER < 15%, check "WSJJ659" present
-- `test_transcribe_callsign_phonetic` - WER < 25%
-- `test_transcribe_callsign_noisy` - WER < 30%
-- `test_transcribe_empty_silence` - expect empty or minimal text
-- `test_transcribe_other_callsign` - check "K6ABC" present
-
----
-
-### Step 3: Add Callsign Detection Validation (30 minutes)
-
-**For callsign tests, also verify detection:**
-
-```python
-def test_transcribe_callsign_clear(
-    self, engine: TranscriptionEngine, test_audio_dir: Path
-) -> None:
-    """Test transcribing clear callsign audio."""
-    from radio_assistant.callsign_detector import CallsignDetector
-
-    audio, sr, ground_truth = self.load_audio_and_transcript(test_audio_dir, "wsjj659_clear")
-    result = engine.transcribe(audio, sample_rate=sr)
-
-    # Transcription accuracy
-    predicted = result.text.strip().lower()
-    expected = ground_truth.strip().lower()
-    word_error_rate = wer(expected, predicted)
-
-    assert word_error_rate < 0.15, (
-        f"WER {word_error_rate:.2%} too high\n"
-        f"Expected: '{expected}'\n"
-        f"Got:      '{predicted}'"
-    )
-
-    # Callsign detection validation
-    detector = CallsignDetector(target_callsign="WSJJ659")
-    detection = detector.detect_callsign(result.text)
-
-    assert detection.detected, f"Failed to detect WSJJ659 in: '{result.text}'"
-    assert detection.confidence > 0.8
-    assert "WSJJ659" in result.text.upper()
-
-    print(f"✓ WER={word_error_rate:.2%}, Callsign: {detection.confidence:.0%}")
-```
-
----
-
-### Step 4: Add Validation Report Script (30 minutes)
-
-**Create:** `scripts/run_validation_report.py`
-
-```python
-#!/usr/bin/env python3
-"""Generate comprehensive validation report."""
-
-import json
-from pathlib import Path
-from jiwer import wer, cer
-import soundfile as sf
-from radio_assistant.transcription_engine import TranscriptionEngine
-from radio_assistant.callsign_detector import CallsignDetector
-
-
-def run_validation():
-    """Run validation and generate report."""
-    print("=" * 80)
-    print("TRANSCRIPTION VALIDATION REPORT")
-    print("=" * 80)
-
-    engine = TranscriptionEngine(model_size="base", device="cpu")
-    detector = CallsignDetector(target_callsign="WSJJ659")
-    test_dir = Path("tests/audio/transcription")
-
-    results = []
-    total_wer = 0
-    total_cer = 0
-    count = 0
-
-    for audio_file in sorted(test_dir.glob("*.wav")):
-        txt_file = audio_file.with_suffix(".txt")
-        if not txt_file.exists():
-            continue
-
-        audio, sr = sf.read(audio_file, dtype="float32")
-        ground_truth = txt_file.read_text().strip()
-
-        if not ground_truth:
-            continue
-
-        result = engine.transcribe(audio, sr)
-
-        predicted = result.text.strip().lower()
-        expected = ground_truth.strip().lower()
-        wer_score = wer(expected, predicted)
-        cer_score = cer(expected, predicted)
-
-        detection = detector.detect_callsign(result.text)
-
-        results.append({
-            "file": audio_file.name,
-            "ground_truth": ground_truth,
-            "transcription": result.text,
-            "wer": wer_score,
-            "cer": cer_score,
-            "callsign_detected": detection.detected,
-            "confidence": detection.confidence if detection.detected else 0.0,
-        })
-
-        status = "✓" if wer_score < 0.20 else "✗"
-        print(f"\n{status} {audio_file.name}")
-        print(f"  Expected:     '{ground_truth}'")
-        print(f"  Transcribed:  '{result.text}'")
-        print(f"  WER: {wer_score:.2%}, CER: {cer_score:.2%}")
-
-        total_wer += wer_score
-        total_cer += cer_score
-        count += 1
-
-    avg_wer = total_wer / count if count > 0 else 0
-    avg_cer = total_cer / count if count > 0 else 0
-
-    print("\n" + "=" * 80)
-    print("SUMMARY")
-    print("=" * 80)
-    print(f"Files tested: {count}")
-    print(f"Average WER:  {avg_wer:.2%}")
-    print(f"Average CER:  {avg_cer:.2%}")
-    print("=" * 80)
-
-    Path("validation_report.json").write_text(json.dumps(results, indent=2))
-
-    success = avg_wer < 0.15
-    status_msg = "✓ PASSED" if success else "✗ FAILED"
-    print(f"\n{status_msg}: Average WER threshold")
-
-    return success
-
-
-if __name__ == "__main__":
-    import sys
-    success = run_validation()
-    sys.exit(0 if success else 1)
-```
-
-**Make executable and run:**
-```bash
-chmod +x scripts/run_validation_report.py
+# Try with larger model
+# Edit validation script to use model_size="small"
 python scripts/run_validation_report.py
 ```
 
+### Option 2: Research Voice Assistant Architectures (2-3 hours)
+
+**Goal:** Study existing open-source voice assistants to inform Phase 2 architecture design.
+
+**Research targets:**
+1. **Rhasspy** - Offline voice assistant
+   - How does it handle streaming audio?
+   - State machine architecture
+   - Integration patterns
+
+2. **Home Assistant Voice** - Voice control for home automation
+   - Wake word detection
+   - Intent recognition
+   - Response generation
+
+3. **Mycroft AI** - Open source voice assistant
+   - Message bus architecture
+   - Skill system
+   - Audio processing pipeline
+
+**Deliverables:**
+- `docs/claude/research/VOICE_ASSISTANT_COMPARISON.md`
+  - Architecture diagrams (ASCII)
+  - Pros/cons of each approach
+  - Lessons learned for our system
+
+- `docs/claude/planning/PHASE2_ARCHITECTURE_PROPOSAL.md`
+  - Proposed architecture based on research
+  - Component breakdown
+  - Integration points with existing code
+
+**See:** `docs/claude/planning/VOICE_ASSISTANT_RESEARCH.md` for research template
+
 ---
 
-### Step 5: Document Baseline Metrics (15 minutes)
+## Recommended Path
 
-**Create:** `docs/claude/BASELINE_METRICS.md`
+**I recommend Option 2** - Do the research before building more features.
 
-```markdown
-# Baseline Transcription Metrics
+**Why:**
+- Tests are already passing with good metrics
+- The noisy audio issue is minor (12.50% WER is acceptable)
+- Understanding existing patterns will save time in Phase 2
+- We need informed architecture decisions before implementing streaming/service
 
-**Date**: 2025-12-27
-**Model**: Whisper base (CPU)
-**Audio**: TTS-generated (gTTS)
-
-## Results
-
-| File | WER | CER | Notes |
-|------|-----|-----|-------|
-| hello_world.wav | X.XX% | X.XX% | Clean speech |
-| wsjj659_clear.wav | X.XX% | X.XX% | Callsign detected |
-| wsjj659_phonetic.wav | X.XX% | X.XX% | Phonetic alphabet |
-| wsjj659_noisy.wav | X.XX% | X.XX% | With noise |
-| other_callsign.wav | X.XX% | X.XX% | K6ABC |
-
-**Summary:**
-- Average WER: X.XX%
-- Average CER: X.XX%
-- Callsign detection: XX% accuracy
-
-[Fill in actual values after running validation report]
-```
+**After research, we can:**
+1. Create informed Phase 2 architecture design
+2. Implement streaming audio handler
+3. Build service layer with proper patterns
+4. Add more sophisticated validation
 
 ---
 
 ## Quick Commands
 
+### If choosing Option 1 (Fix Tests):
 ```bash
-# Setup
-git checkout main && git pull
-git checkout -b feature/add-transcription-validation
+# Check current branch
+git status
 
-# Install
-pip install jiwer
-
-# Test
-pytest tests/integration/test_transcription_accuracy.py -v -s
-
-# Report
+# Run validation report
+conda activate cuda12
 python scripts/run_validation_report.py
 
-# Commit
-git add -A
-git commit -m "feat: add WER/CER validation to transcription tests"
-git push -u origin feature/add-transcription-validation
+# Run specific test
+pytest tests/integration/test_transcription_accuracy.py::TestTranscriptionAccuracy::test_transcribe_callsign_phonetic -v -s
+```
 
-# PR
-gh pr create --title "Add transcription accuracy validation"
+### If choosing Option 2 (Research):
+```bash
+# Create research document
+mkdir -p docs/claude/research
+
+# Start research session - use web search and documentation
+# Focus on:
+# - Rhasspy architecture
+# - Home Assistant Voice
+# - Mycroft message bus pattern
 ```
 
 ---
 
-## Expected Results
+## Context for Next Session
 
-With TTS audio + Whisper base:
-- Clean audio: WER < 10%
-- Noisy audio: WER < 20%
-- Callsign detection: >95% accuracy
+**Key files to understand:**
+- `radio_assistant/transcription_engine.py` - Current transcription
+- `radio_assistant/callsign_detector.py` - Detection logic
+- `tests/integration/test_transcription_accuracy.py` - Integration tests
+- `scripts/run_validation_report.py` - Validation script
+- `docs/claude/BASELINE_METRICS.md` - Current metrics
+
+**Architecture questions to answer:**
+1. How should we handle streaming audio (not batch)?
+2. What state machine do we need for voice interaction?
+3. How do we integrate VAD + transcription + detection + response?
+4. Should we use a message bus pattern like Mycroft?
+5. How do we handle concurrent audio streams (multi-channel)?
+
+**Pending issues:**
+- Noisy audio transcription (669 vs 659) - minor issue
+- Need streaming audio architecture
+- Need service/daemon design
+- Need proper state management for conversations
 
 ---
 
 ## Success Criteria
 
-- ✅ jiwer installed
-- ✅ All tests validate against ground truth
-- ✅ WER/CER metrics logged
-- ✅ Validation report runs
-- ✅ Baseline metrics documented
-- ✅ PR created
+**For Option 1 (Fix Tests):**
+- ✅ Noisy audio WER < 10%
+- ✅ All tests still passing
+- ✅ Metrics updated in BASELINE_METRICS.md
 
-**Then: Research voice assistant architectures (next session)**
-
----
-
-## After This Session
-
-**Next:** Research Phase (see `docs/claude/planning/VOICE_ASSISTANT_RESEARCH.md`)
-- Study Rhasspy, Home Assistant, Mycroft AI
-- Document streaming architecture patterns
-- Create informed architecture proposal
-
-**Full roadmap:** `docs/claude/planning/PHASE2_PLANNING_SUMMARY.md`
+**For Option 2 (Research):**
+- ✅ Voice assistant comparison document created
+- ✅ Architecture proposal drafted
+- ✅ Key patterns identified for our use case
+- ✅ Decision on message bus vs direct integration
+- ✅ Streaming audio approach defined
 
 ---
 
-*Status: Ready to start*
-*Time: 2-3 hours*
-*Then: Research existing voice assistants*
+## Full Roadmap
+
+**Phase 2 Plan** (see `docs/claude/planning/PHASE2_PLANNING_SUMMARY.md`):
+
+1. ✅ Add WER/CER validation (DONE - this session)
+2. 🔄 Research voice assistants (NEXT - recommended)
+3. 📋 Design Phase 2 architecture
+4. 📋 Implement streaming audio handler
+5. 📋 Build service layer
+6. 📋 Add state management
+7. 📋 Integration testing
+
+---
+
+*Status: Ready for research phase*
+*Recommend: Option 2 - Research before building*
+*Time: 2-3 hours for thorough research*
