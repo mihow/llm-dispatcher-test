@@ -1,0 +1,59 @@
+{
+  "multiple_transmissions.wav": {
+    "duration": 4.0,
+    "sample_rate": 16000,
+    "speech_segments": [
+      {
+        "start": 0.0,
+        "end": 0.542
+      }
+    ],
+    "is_speech": false
+  },
+  "noise_only.wav": {
+    "duration": 2.0,
+    "sample_rate": 16000,
+    "speech_segments": [],
+    "is_speech": false
+  },
+  "silence.wav": {
+    "duration": 2.0,
+    "sample_rate": 16000,
+    "speech_segments": [],
+    "is_speech": false
+  },
+  "speech_clean.wav": {
+    "duration": 2.0,
+    "sample_rate": 16000,
+    "speech_segments": [
+      {
+        "start": 0.0,
+        "end": 0.542
+      }
+    ],
+    "is_speech": false
+  },
+  "speech_weak_signal.wav": {
+    "duration": 2.0,
+    "sample_rate": 16000,
+    "speech_segments": [
+      {
+        "start": 0.194,
+        "end": 2.0
+      }
+    ],
+    "is_speech": false
+  },
+  "speech_with_static.wav": {
+    "duration": 2.0,
+    "sample_rate": 16000,
+    "speech_segments": [],
+    "is_speech": false
+  },
+  "squelch_tail.wav": {
+    "duration": 2.0,
+    "sample_rate": 16000,
+    "speech_segments": [],
+    "is_speech": false
+  }
+}

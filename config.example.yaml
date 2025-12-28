@@ -1,0 +1,40 @@
+# Ham Radio Assistant Configuration Example
+
+# Operator configuration
+callsign: WSJJ659
+require_dispatch_keyword: true
+enable_phonetic_detection: true
+
+# Audio configuration
+audio:
+  input_device: null  # null = default device
+  output_device: null
+  sample_rate: 16000
+  channels: 1
+
+# VAD (Voice Activity Detection) configuration
+vad:
+  threshold: 0.5
+  min_speech_duration_ms: 250
+  min_silence_duration_ms: 100
+
+# Transcription configuration
+transcription:
+  model_size: base  # base, small, medium
+  device: cpu       # cpu, cuda
+  compute_type: int8
+
+# PTT (Push-to-Talk) configuration
+ptt:
+  method: vox              # vox, gpio, serial
+  vox_padding_ms: 300
+  # Future GPIO config
+  # gpio_pin: 17
+  # gpio_active_low: true
+
+# Application configuration
+app:
+  chunk_duration_sec: 0.5
+  response_audio: tests/audio/responses/signal_received.wav
+  log_level: INFO
+  log_file: radio_assistant.log
