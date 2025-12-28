@@ -1,9 +1,30 @@
 """Integration tests for transcription accuracy."""
 
+import re
 from pathlib import Path
 import pytest
 import soundfile as sf
+from jiwer import wer, cer
 from radio_assistant.transcription_engine import TranscriptionEngine
+from radio_assistant.callsign_detector import CallsignDetector
+
+
+def normalize_for_comparison(text: str) -> str:
+    """Normalize text for WER/CER comparison.
+
+    Args:
+        text: Input text
+
+    Returns:
+        Normalized text (lowercase, no punctuation, normalized whitespace)
+    """
+    # Convert to lowercase
+    text = text.lower()
+    # Remove punctuation
+    text = re.sub(r"[^\w\s]", " ", text)
+    # Normalize whitespace
+    text = " ".join(text.split())
+    return text
 
 
 class TestTranscriptionAccuracy:
@@ -45,11 +66,27 @@ class TestTranscriptionAccuracy:
 
         result = engine.transcribe(audio, sample_rate=sr)
 
-        # Note: Since we're using tone placeholders, we can't test exact match
-        # This test validates the engine works end-to-end
-        assert isinstance(result.text, str)
+        # Normalize for comparison
+        predicted = normalize_for_comparison(result.text)
+        expected = normalize_for_comparison(ground_truth)
+
+        # Calculate accuracy metrics
+        word_error_rate = wer(expected, predicted)
+        char_error_rate = cer(expected, predicted)
+
+        # Assert accuracy threshold (TTS audio should be very accurate)
+        assert word_error_rate < 0.20, (
+            f"WER too high: {word_error_rate:.2%}\n"
+            f"Expected: '{expected}'\n"
+            f"Got:      '{predicted}'"
+        )
+
+        # Keep structure checks
         assert result.duration_ms > 0
         assert isinstance(result.segments, list)
+
+        # Log for visibility
+        print(f"✓ WER={word_error_rate:.2%}, CER={char_error_rate:.2%}")
 
     def test_transcribe_callsign_clear(
         self, engine: TranscriptionEngine, test_audio_dir: Path
@@ -59,9 +96,38 @@ class TestTranscriptionAccuracy:
 
         result = engine.transcribe(audio, sample_rate=sr)
 
-        assert isinstance(result.text, str)
+        # Normalize for comparison
+        predicted = normalize_for_comparison(result.text)
+        expected = normalize_for_comparison(ground_truth)
+
+        # Calculate accuracy metrics
+        word_error_rate = wer(expected, predicted)
+        char_error_rate = cer(expected, predicted)
+
+        # Assert accuracy threshold (clear audio should be very accurate)
+        assert word_error_rate < 0.15, (
+            f"WER too high: {word_error_rate:.2%}\n"
+            f"Expected: '{expected}'\n"
+            f"Got:      '{predicted}'"
+        )
+
+        # Callsign detection validation
+        detector = CallsignDetector(callsign="WSJJ659", require_dispatch_keyword=False)
+        detection = detector.detect(result.text)
+
+        assert detection.detected, f"Failed to detect WSJJ659 in: '{result.text}'"
+        assert (
+            detection.confidence > 0.8
+        ), f"Detection confidence too low: {detection.confidence:.2%}"
+
+        # Keep structure checks
         assert result.duration_ms > 0
-        # Ground truth: "This is WSJJ659 calling"
+
+        # Log for visibility
+        print(
+            f"✓ WER={word_error_rate:.2%}, CER={char_error_rate:.2%}, "
+            f"Callsign: {detection.confidence:.0%}"
+        )
 
     def test_transcribe_callsign_phonetic(
         self, engine: TranscriptionEngine, test_audio_dir: Path
@@ -71,9 +137,26 @@ class TestTranscriptionAccuracy:
 
         result = engine.transcribe(audio, sample_rate=sr)
 
-        assert isinstance(result.text, str)
+        # Normalize for comparison
+        predicted = normalize_for_comparison(result.text)
+        expected = normalize_for_comparison(ground_truth)
+
+        # Calculate accuracy metrics
+        word_error_rate = wer(expected, predicted)
+        char_error_rate = cer(expected, predicted)
+
+        # Higher threshold for phonetic alphabet (harder to transcribe)
+        assert word_error_rate < 0.25, (
+            f"WER too high: {word_error_rate:.2%}\n"
+            f"Expected: '{expected}'\n"
+            f"Got:      '{predicted}'"
+        )
+
+        # Keep structure checks
         assert result.duration_ms > 0
-        # Ground truth: "Whiskey Sierra Juliet Juliet six five nine calling"
+
+        # Log for visibility
+        print(f"✓ WER={word_error_rate:.2%}, CER={char_error_rate:.2%}")
 
     def test_transcribe_silence(self, engine: TranscriptionEngine, test_audio_dir: Path) -> None:
         """Test transcribing silence/empty audio."""
@@ -93,8 +176,35 @@ class TestTranscriptionAccuracy:
 
         result = engine.transcribe(audio, sample_rate=sr)
 
-        assert isinstance(result.text, str)
-        # Ground truth: "This is K6ABC calling"
+        # Normalize for comparison
+        predicted = normalize_for_comparison(result.text)
+        expected = normalize_for_comparison(ground_truth)
+
+        # Calculate accuracy metrics
+        word_error_rate = wer(expected, predicted)
+        char_error_rate = cer(expected, predicted)
+
+        # Assert accuracy threshold
+        assert word_error_rate < 0.20, (
+            f"WER too high: {word_error_rate:.2%}\n"
+            f"Expected: '{expected}'\n"
+            f"Got:      '{predicted}'"
+        )
+
+        # Callsign detection validation
+        detector = CallsignDetector(callsign="K6ABC", require_dispatch_keyword=False)
+        detection = detector.detect(result.text)
+
+        assert detection.detected, f"Failed to detect K6ABC in: '{result.text}'"
+        assert (
+            detection.confidence > 0.8
+        ), f"Detection confidence too low: {detection.confidence:.2%}"
+
+        # Log for visibility
+        print(
+            f"✓ WER={word_error_rate:.2%}, CER={char_error_rate:.2%}, "
+            f"Callsign: {detection.confidence:.0%}"
+        )
 
     def test_confidence_score_reasonable(
         self, engine: TranscriptionEngine, test_audio_dir: Path
@@ -137,20 +247,20 @@ class TestTranscriptionAccuracy:
             assert isinstance(result.text, str)
 
     @pytest.mark.parametrize(
-        "filename",
+        "filename,wer_threshold",
         [
-            "hello_world",
-            "wsjj659_clear",
-            "wsjj659_phonetic",
-            "wsjj659_noisy",
-            "wsjj659_rapid",
-            "other_callsign",
+            ("hello_world", 0.20),
+            ("wsjj659_clear", 0.15),
+            ("wsjj659_phonetic", 0.25),
+            ("wsjj659_noisy", 0.30),
+            ("wsjj659_rapid", 0.30),
+            ("other_callsign", 0.20),
         ],
     )
     def test_all_test_files_transcribe(
-        self, engine: TranscriptionEngine, test_audio_dir: Path, filename: str
+        self, engine: TranscriptionEngine, test_audio_dir: Path, filename: str, wer_threshold: float
     ) -> None:
-        """Test that all test audio files can be transcribed without error."""
+        """Test that all test audio files can be transcribed with acceptable accuracy."""
         audio, sr, ground_truth = self.load_audio_and_transcript(test_audio_dir, filename)
 
         result = engine.transcribe(audio, sample_rate=sr)
@@ -160,6 +270,21 @@ class TestTranscriptionAccuracy:
         assert result.duration_ms > 0
         assert isinstance(result.segments, list)
         assert isinstance(result.confidence, float)
+
+        # Accuracy validation
+        predicted = normalize_for_comparison(result.text)
+        expected = normalize_for_comparison(ground_truth)
+
+        word_error_rate = wer(expected, predicted)
+        char_error_rate = cer(expected, predicted)
+
+        assert word_error_rate < wer_threshold, (
+            f"{filename}: WER {word_error_rate:.2%} exceeds threshold {wer_threshold:.2%}\n"
+            f"Expected: '{expected}'\n"
+            f"Got:      '{predicted}'"
+        )
+
+        print(f"✓ {filename}: WER={word_error_rate:.2%}, CER={char_error_rate:.2%}")
 
     def test_transcription_reproducible(
         self, engine: TranscriptionEngine, test_audio_dir: Path
