@@ -68,7 +68,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload test captures
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-audio-captures-py${{ matrix.python-version }}
           path: test_capture.wav

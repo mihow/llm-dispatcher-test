@@ -106,7 +106,7 @@ class TestAudioCaptureIntegration:
 
     def test_round_trip_audio_data(self) -> None:
         """Test capturing and immediately playing back audio data."""
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import patch
         import sounddevice as sd
 
         # Create a mock that simulates realistic audio I/O

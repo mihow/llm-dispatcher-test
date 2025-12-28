@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 import torch
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from radio_assistant.vad_detector import VADDetector
 
 

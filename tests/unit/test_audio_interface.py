@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch
 from radio_assistant.audio_interface import AudioInterface
 
 
