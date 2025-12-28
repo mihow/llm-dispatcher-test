@@ -43,9 +43,7 @@ class AudioInterface:
         self.output_device: Optional[str] = output_device
 
         # Resolve device names to indices
-        self._input_device_index: Optional[int] = self._resolve_device(
-            input_device, kind="input"
-        )
+        self._input_device_index: Optional[int] = self._resolve_device(input_device, kind="input")
         self._output_device_index: Optional[int] = self._resolve_device(
             output_device, kind="output"
         )
@@ -55,9 +53,7 @@ class AudioInterface:
             f"input={input_device}, output={output_device}"
         )
 
-    def _resolve_device(
-        self, device: Optional[str], kind: str = "input"
-    ) -> Optional[int]:
+    def _resolve_device(self, device: Optional[str], kind: str = "input") -> Optional[int]:
         """Resolve device name to device index.
 
         Args:

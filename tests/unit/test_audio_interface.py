@@ -192,7 +192,9 @@ class TestAudioInterface:
             audio: AudioInterface = AudioInterface(channels=1)
 
             # Stereo data but interface expects mono
-            with pytest.raises(ValueError, match="Audio data has 2 channels but interface expects 1"):
+            with pytest.raises(
+                ValueError, match="Audio data has 2 channels but interface expects 1"
+            ):
                 audio.play_audio(np.random.randn(100, 2).astype(np.float32))
 
     def test_play_audio_handles_exception(self) -> None:

@@ -40,7 +40,9 @@ def generate_speech_like_signal(duration: float, sample_rate: int = 16000) -> np
     return signal.astype(np.float32)
 
 
-def generate_noise(duration: float, sample_rate: int = 16000, noise_level: float = 0.1) -> np.ndarray:
+def generate_noise(
+    duration: float, sample_rate: int = 16000, noise_level: float = 0.1
+) -> np.ndarray:
     """Generate white noise."""
     noise: np.ndarray = np.random.randn(int(sample_rate * duration)).astype(np.float32)
     noise = noise / np.abs(noise).max() * noise_level
@@ -49,10 +51,10 @@ def generate_noise(duration: float, sample_rate: int = 16000, noise_level: float
 
 def add_noise(signal: np.ndarray, snr_db: float = 10.0) -> np.ndarray:
     """Add noise to signal at specified SNR."""
-    signal_power: float = float(np.mean(signal ** 2))
+    signal_power: float = float(np.mean(signal**2))
     noise_power: float = signal_power / (10 ** (snr_db / 10))
     noise: np.ndarray = np.random.randn(len(signal)).astype(np.float32)
-    noise = noise / np.sqrt(np.mean(noise ** 2)) * np.sqrt(noise_power)
+    noise = noise / np.sqrt(np.mean(noise**2)) * np.sqrt(noise_power)
     return (signal + noise).astype(np.float32)
 
 
@@ -95,10 +97,12 @@ def main() -> None:
 
     # 6. Squelch tail (short burst then silence)
     logger.info("Generating squelch_tail.wav...")
-    squelch = np.concatenate([
-        generate_noise(0.2, sample_rate, noise_level=0.3),  # Brief noise burst
-        np.zeros(int(1.8 * sample_rate), dtype=np.float32),  # Silence
-    ])
+    squelch = np.concatenate(
+        [
+            generate_noise(0.2, sample_rate, noise_level=0.3),  # Brief noise burst
+            np.zeros(int(1.8 * sample_rate), dtype=np.float32),  # Silence
+        ]
+    )
     sf.write(output_dir / "squelch_tail.wav", squelch, sample_rate)
 
     # 7. Multiple transmissions

@@ -94,9 +94,9 @@ class TestAudioCaptureIntegration:
             audio: AudioInterface = AudioInterface(sample_rate=16000, channels=1)
 
             # Create test audio
-            test_audio: np.ndarray = np.sin(
-                2 * np.pi * 440.0 * np.linspace(0, 1, 16000)
-            ).astype(np.float32)
+            test_audio: np.ndarray = np.sin(2 * np.pi * 440.0 * np.linspace(0, 1, 16000)).astype(
+                np.float32
+            )
 
             # Should not raise any exceptions
             audio.play_audio(test_audio)
@@ -112,9 +112,11 @@ class TestAudioCaptureIntegration:
         # Create a mock that simulates realistic audio I/O
         captured_data: np.ndarray = np.random.randn(16000).astype(np.float32) * 0.1
 
-        with patch.object(sd, "rec") as mock_rec, patch.object(
-            sd, "play"
-        ) as mock_play, patch.object(sd, "wait"):
+        with (
+            patch.object(sd, "rec") as mock_rec,
+            patch.object(sd, "play") as mock_play,
+            patch.object(sd, "wait"),
+        ):
 
             mock_rec.return_value = captured_data.reshape(-1, 1)
 

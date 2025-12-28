@@ -24,15 +24,11 @@ def main() -> None:
     parser.add_argument(
         "--output", type=str, default="test_capture.wav", help="Output WAV file path"
     )
-    parser.add_argument(
-        "--input-device", type=str, default=None, help="Input device name or index"
-    )
+    parser.add_argument("--input-device", type=str, default=None, help="Input device name or index")
     parser.add_argument(
         "--list-devices", action="store_true", help="List available devices and exit"
     )
-    parser.add_argument(
-        "--sample-rate", type=int, default=16000, help="Sample rate in Hz"
-    )
+    parser.add_argument("--sample-rate", type=int, default=16000, help="Sample rate in Hz")
     parser.add_argument("--channels", type=int, default=1, help="Number of channels")
     args = parser.parse_args()
 
@@ -66,7 +62,7 @@ def main() -> None:
         audio_data: np.ndarray = audio.capture_chunk(args.duration)
 
         # Display statistics
-        logger.info(f"Capture successful:")
+        logger.info("Capture successful:")
         logger.info(f"  Shape: {audio_data.shape}")
         logger.info(f"  dtype: {audio_data.dtype}")
         logger.info(f"  Sample rate: {args.sample_rate} Hz")
