@@ -3,7 +3,6 @@
 
 import sys
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 import soundfile as sf
@@ -223,12 +222,12 @@ def main() -> None:
     # Silence (keep existing - just zeros)
     silence = np.zeros(int(2.0 * sample_rate), dtype=np.float32)
     sf.write(vad_dir / "silence.wav", silence, sample_rate)
-    logger.info(f"Generated: silence.wav")
+    logger.info("Generated: silence.wav")
 
     # Noise only (keep existing - white noise)
     noise = np.random.randn(int(2.0 * sample_rate)).astype(np.float32) * 0.1
     sf.write(vad_dir / "noise_only.wav", noise, sample_rate)
-    logger.info(f"Generated: noise_only.wav")
+    logger.info("Generated: noise_only.wav")
 
     # Squelch tail (short burst then silence)
     squelch_audio = AudioSegment.silent(duration=100)  # Brief static
@@ -236,7 +235,7 @@ def main() -> None:
     squelch_audio = static + AudioSegment.silent(duration=1900)
     squelch_audio = squelch_audio.set_frame_rate(sample_rate)
     squelch_audio.export(str(vad_dir / "squelch_tail.wav"), format="wav")
-    logger.info(f"Generated: squelch_tail.wav")
+    logger.info("Generated: squelch_tail.wav")
 
     # =========================================================================
     # Transcription Test Audio
@@ -297,7 +296,7 @@ def main() -> None:
     # Empty silence (keep as silence)
     silence = np.zeros(int(1.0 * sample_rate), dtype=np.float32)
     sf.write(trans_dir / "empty_silence.wav", silence, sample_rate)
-    logger.info(f"Generated: empty_silence.wav")
+    logger.info("Generated: empty_silence.wav")
 
     # =========================================================================
     # E2E Test Audio
@@ -334,12 +333,12 @@ def main() -> None:
     # Silence scenario
     silence = np.zeros(int(2.0 * sample_rate), dtype=np.float32)
     sf.write(e2e_dir / "scenario_silence.wav", silence, sample_rate)
-    logger.info(f"Generated: scenario_silence.wav")
+    logger.info("Generated: scenario_silence.wav")
 
     # Noise only scenario
     noise = np.random.randn(int(2.0 * sample_rate)).astype(np.float32) * 0.1
     sf.write(e2e_dir / "scenario_noise.wav", noise, sample_rate)
-    logger.info(f"Generated: scenario_noise.wav")
+    logger.info("Generated: scenario_noise.wav")
 
     # =========================================================================
     # Response Audio (keep existing if satisfactory)
