@@ -1,0 +1,56 @@
+[
+  {
+    "file": "hello_world.wav",
+    "ground_truth": "Hello world this is a test",
+    "transcription": "Hello world, this is a test.",
+    "wer": 0.0,
+    "cer": 0.0,
+    "callsign_detected": false,
+    "confidence": 0.0
+  },
+  {
+    "file": "other_callsign.wav",
+    "ground_truth": "This is K6 ABC calling",
+    "transcription": "This is K6-ABC calling.",
+    "wer": 0.0,
+    "cer": 0.0,
+    "callsign_detected": false,
+    "confidence": 0.0
+  },
+  {
+    "file": "wsjj659_clear.wav",
+    "ground_truth": "This is WS JJ 659 calling",
+    "transcription": "This is WS JJ 659 calling.",
+    "wer": 0.0,
+    "cer": 0.0,
+    "callsign_detected": true,
+    "confidence": 0.95
+  },
+  {
+    "file": "wsjj659_noisy.wav",
+    "ground_truth": "This is WS JJ 659 do you copy",
+    "transcription": "This is WS JJ-669, do you copy?",
+    "wer": 0.125,
+    "cer": 0.034482758620689655,
+    "callsign_detected": false,
+    "confidence": 0.0
+  },
+  {
+    "file": "wsjj659_phonetic.wav",
+    "ground_truth": "Whiskey Sierra Juliet Juliette 659 calling",
+    "transcription": "Whiskey, Sierra, Juliet, Juliette, 659 calling.",
+    "wer": 0.0,
+    "cer": 0.0,
+    "callsign_detected": false,
+    "confidence": 0.0
+  },
+  {
+    "file": "wsjj659_rapid.wav",
+    "ground_truth": "WS JJ 659 WS JJ 659 come in",
+    "transcription": "WS JJ 659, WS JJ 659 come in.",
+    "wer": 0.0,
+    "cer": 0.0,
+    "callsign_detected": true,
+    "confidence": 0.95
+  }
+]
